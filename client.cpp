@@ -15,8 +15,7 @@
 #include <signal.h>
 #include <string>
 #include <iostream>
-//#include "stack.hpp"
-#include "new_stack.hpp"
+#include "stack.hpp"
 
 #define PORT "3490" // the port client will be connecting to 
 
@@ -96,9 +95,7 @@ int main(int argc, char *argv[])
         memset(buf, 0, MAXDATASIZE);
         std::string cmd;
         getline(cin,cmd);
-            // cmd+=argv[i] + ' ';
-            // cout<<cmd<<endl;
-        
+
         if (cmd.size()>MAXDATASIZE)
         {
             perror("text bigger then 1024");

@@ -25,7 +25,6 @@ struct stack
     string POP(struct stack*);
     //TOP
     string TOP(struct stack );
-    //get_size
 
 void file_de();
 

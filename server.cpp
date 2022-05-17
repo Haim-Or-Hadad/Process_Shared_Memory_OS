@@ -16,9 +16,8 @@
 #include <signal.h>
 #include <string>
 #include <iostream>
-//#include "stack.hpp"
 #include <sys/mman.h> 
-#include "new_stack.hpp"
+#include "stack.hpp"
 
 #define PORT "3490"  // the port users will be connecting to
 
@@ -41,24 +40,21 @@ void* thread_handler(void *new_fd){
     char recv_data[1024];
     while (1)
     {
-        //recv(socket, recv_data, 1024,0) != -1;
         memset(recv_data, 0, 1024);
         if(recv(socket,recv_data,1024,0)==-1){
             perror("ERR:recv error");
         }
-        //cout << recv_data << endl;
+        /*PUSH*/
         if (StartsWith(recv_data,"PUSH"))
         {
             strncpy(recv_data,recv_data+5,sizeof(recv_data) - 5);
             string str(recv_data);
-            //cout << str << endl;
             PUSH(recv_data,global_stack);
-            printf("PUSH AT: %p\n", global_stack->addres_);
-            cout<<"pushed "<<str<<endl;
+            cout<<"pushed string:"<<str<<endl;
         }
+        /*POP*/
         else if(StartsWith(recv_data,"POP")){
             string ans= POP(global_stack)+'\0';;
-            printf("POP AT: %p\n", global_stack->addres_);
             if (send(socket,ans.data(),ans.size(),0)==-1)
             {
                 perror("send");
@@ -74,9 +70,6 @@ void* thread_handler(void *new_fd){
             }
             cout<<"sent "<<ans.data()<<endl;
         }
-        //else
-            //cout<<"got "<<recv_data<<endl;
-        
     }
     close(socket);
 } 
@@ -184,7 +177,7 @@ int main(void)
 
         inet_ntop(their_addr.ss_family,get_in_addr((struct sockaddr *)&their_addr),s, sizeof s);
         printf("server: got connection from %s\n", s);
-        if (fork()==0)
+        if (!(fork()))
         {
         thread_handler(&new_fd);
         close(new_fd);
