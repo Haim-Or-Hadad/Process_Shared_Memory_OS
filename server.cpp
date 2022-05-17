@@ -16,8 +16,9 @@
 #include <signal.h>
 #include <string>
 #include <iostream>
-#include "stack.hpp"
+//#include "stack.hpp"
 #include <sys/mman.h> 
+#include "new_stack.hpp"
 
 #define PORT "3490"  // the port users will be connecting to
 
@@ -45,15 +46,19 @@ void* thread_handler(void *new_fd){
         if(recv(socket,recv_data,1024,0)==-1){
             perror("ERR:recv error");
         }
+        //cout << recv_data << endl;
         if (StartsWith(recv_data,"PUSH"))
         {
             strncpy(recv_data,recv_data+5,sizeof(recv_data) - 5);
             string str(recv_data);
-            global_stack->PUSH(str);
+            //cout << str << endl;
+            PUSH(recv_data,global_stack);
+            printf("PUSH AT: %p\n", global_stack->addres_);
             cout<<"pushed "<<str<<endl;
         }
         else if(StartsWith(recv_data,"POP")){
-            string ans=global_stack->POP()+'\0';;
+            string ans= POP(global_stack)+'\0';;
+            printf("POP AT: %p\n", global_stack->addres_);
             if (send(socket,ans.data(),ans.size(),0)==-1)
             {
                 perror("send");
@@ -61,7 +66,8 @@ void* thread_handler(void *new_fd){
             cout<<"sent "<<ans.data()<<endl;
         }
         else if(StartsWith(recv_data,"TOP")){
-            string ans=global_stack->TOP()+'\0';
+            printf("TOP AT: %p\n", global_stack->addres_);
+            string ans= TOP(*global_stack)+'\0';
             if (send(socket,ans.data(),ans.size(),0)==-1)
             {
                 perror("send");
@@ -101,7 +107,9 @@ void *get_in_addr(struct sockaddr *sa)
 
 int main(void)
 {
-    global_stack = (stack*)mmap(0, 10000000, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | MAP_ANON, -1, 0);
+    file_de();
+    global_stack = (struct stack*)mmap(NULL,sizeof(struct stack), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | MAP_ANON, -1, 0);
+    memory_to_shared(global_stack);
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // connector's address information
@@ -110,7 +118,7 @@ int main(void)
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
-
+    //memory_init(global_stack);
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -174,10 +182,9 @@ int main(void)
             continue;
         }
 
-        inet_ntop(their_addr.ss_family,
-        get_in_addr((struct sockaddr *)&their_addr),s, sizeof s);
+        inet_ntop(their_addr.ss_family,get_in_addr((struct sockaddr *)&their_addr),s, sizeof s);
         printf("server: got connection from %s\n", s);
-        if (!fork())
+        if (fork()==0)
         {
         thread_handler(&new_fd);
         close(new_fd);
